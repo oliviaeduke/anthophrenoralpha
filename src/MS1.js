@@ -287,7 +287,7 @@ gltfLoader.load('/models/MSmodels/MS1_2.glb', (gltf) => {
 attemptTextureLoading();
 
 addTextToWall(room.walls.front, `
-  <p><a href="/pages/MS3.html">Nobody</a> can hear us from <a href="/pages/MS2.html">here</a>, Scarlett.</p>
+  <p><a href="MS3.html">Nobody</a> can hear us from <a href="MS2.html">here</a>, Scarlett.</p>
 `);
 
 let isAltPressed = false;
