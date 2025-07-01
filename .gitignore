@@ -2,9 +2,6 @@
 .env
 .env.*
 
-# Netlify folder
-.netlify
-
 # System files
 Thumbs.db
 
