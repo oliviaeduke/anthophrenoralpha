@@ -19,42 +19,47 @@ camera.add(listener);
 const sound = new THREE.Audio(listener);
 const audioLoader = new THREE.AudioLoader();
 
-audioLoader.load('sound/birds.mp3', buffer => {
-  sound.setBuffer(buffer);
-  sound.setLoop(true);
-  sound.setVolume(0.5);
-  sound.play();
-  console.log('Bird sounds playing');
-}, xhr => console.log('Audio ' + (xhr.loaded / xhr.total * 100) + '% loaded'), error => {
-  console.error('Error loading audio:', error);
-  tryAlternateAudioPaths();
-});
+const audioPaths = [
+  '/sound/SE1.mp3',
+];
 
-function tryAlternateAudioPaths() {
-  const audioPaths = ['/sound/SE1.mp3'];
+function loadAudio() {
   let pathIndex = 0;
 
   function tryNextPath() {
     if (pathIndex >= audioPaths.length) {
-      console.error('Failed to load audio from all paths');
+      console.warn('No audio files could be loaded - continuing without audio');
       return;
     }
+    
     const path = audioPaths[pathIndex];
-    console.log(`Trying to load audio from: ${path}`);
-    audioLoader.load(path, buffer => {
-      sound.setBuffer(buffer);
-      sound.setLoop(true);
-      sound.setVolume(0.2);
-      sound.play();
-      console.log(`Successfully loaded audio from path: ${path}`);
-    }, xhr => console.log('Audio ' + (xhr.loaded / xhr.total * 100) + '% loaded'), error => {
-      console.error(`Failed to load audio from path: ${path}`, error);
-      pathIndex++;
-      tryNextPath();
-    });
+    console.log(`Attempting to load audio from: ${path}`);
+    
+    audioLoader.load(
+      path,
+      buffer => {
+        sound.setBuffer(buffer);
+        sound.setLoop(true);
+        sound.setVolume(0.3);
+        sound.play();
+        console.log(`Successfully loaded audio from: ${path}`);
+      },
+      xhr => {
+        const progress = xhr.total > 0 ? (xhr.loaded / xhr.total * 100) : 0;
+        console.log(`Audio loading: ${progress.toFixed(1)}%`);
+      },
+      error => {
+        console.warn(`Failed to load audio from: ${path}`, error);
+        pathIndex++;
+        tryNextPath();
+      }
+    );
   }
+  
   tryNextPath();
 }
+
+loadAudio();
 
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -80,16 +85,24 @@ let room;
 
 function loadTexture(path) {
   return new Promise((resolve, reject) => {
-    textureLoader.load(path, texture => {
-      console.log(`Texture loaded successfully: ${path}`);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(1,1);
-      resolve(texture);
-    }, xhr => console.log(`Texture ${path} loading: ${(xhr.loaded / xhr.total) * 100}%`), error => {
-      console.error(`Error loading texture ${path}:`, error);
-      reject(error);
-    });
+    textureLoader.load(
+      path, 
+      texture => {
+        console.log(`Texture loaded successfully: ${path}`);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(1,1);
+        resolve(texture);
+      }, 
+      xhr => {
+        const progress = xhr.total > 0 ? (xhr.loaded / xhr.total * 100) : 0;
+        console.log(`Texture ${path} loading: ${progress.toFixed(1)}%`);
+      }, 
+      error => {
+        console.error(`Error loading texture ${path}:`, error);
+        reject(error);
+      }
+    );
   });
 }
 
@@ -244,28 +257,36 @@ dracoLoader.setDecoderPath('/draco/');
 const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 
-gltfLoader.load('/models/SEmodels/SE1_3.glb', gltf => {
-  const model = gltf.scene;
-  const box = new THREE.Box3().setFromObject(model);
-  const center = box.getCenter(new THREE.Vector3());
-  model.position.sub(center);
-  model.scale.set(3, 3, 3);
-  model.position.set(7, 8, -6);
-  model.rotation.y = -Math.PI / 8;
+gltfLoader.load(
+  '/models/SEmodels/SE1_3.glb',
+  gltf => {
+    const model = gltf.scene;
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    model.position.sub(center);
+    model.scale.set(3, 3, 3);
+    model.position.set(7, 8, -6);
+    model.rotation.y = -Math.PI / 8;
 
-  model.traverse(child => {
-    if (child.isMesh) {
-      child.castShadow = true;
-      child.receiveShadow = true;
-    }
-  });
+    model.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
 
-  scene.add(model);
-  renderer.render(scene, camera);
-  console.log("SE1_3.glb model loaded successfully with DRACO compression");
-}, xhr => console.log(`SE1_3.glb loading: ${(xhr.loaded / xhr.total) * 100}%`), error => {
-  console.error('Error loading DRACO GLB model:', error);
-});
+    scene.add(model);
+    renderer.render(scene, camera);
+    console.log("SE1_3.glb model loaded successfully");
+  },
+  xhr => {
+    const progress = xhr.total > 0 ? (xhr.loaded / xhr.total * 100) : 0;
+    console.log(`SE1_3.glb loading: ${progress.toFixed(1)}%`);
+  },
+  error => {
+    console.error('Error loading GLTF model:', error);
+  }
+);
 
 let isAltPressed = false;
 let isRotating = false;
