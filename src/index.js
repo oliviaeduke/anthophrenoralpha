@@ -31,23 +31,38 @@ function createTendril(angle) {
         const x = radius * Math.cos(angle) + Math.sin(i * 0.4) * 0.1;
         const y = radius * Math.sin(angle) + Math.cos(i * 0.4) * 0.1;
         const z = (Math.random() - 0.5) * 0.3;
+        
+        if (isNaN(x) || isNaN(y) || isNaN(z)) {
+            console.warn('Invalid coordinates detected, skipping point');
+            continue;
+        }
+        
         points.push(new THREE.Vector3(x, y, z));
         radius += 0.08; 
     }
     
-    const curve = new THREE.CatmullRomCurve3(points);
-    const geometry = new THREE.TubeGeometry(curve, 32, 0.002, 8, false); 
-    geometry.userData.originalPositions = geometry.attributes.position.array.slice(); 
-    const material = new THREE.MeshStandardMaterial({
-        color: 0x12185C,
-        transparent: true,
-        opacity: 100,
-        emissive: 0x12185C,
-        emissiveIntensity: 0.8,
-    });
-    const tendril = new THREE.Mesh(geometry, material);
-    tendril.userData.waveOffset = Math.random() * Math.PI * 2;
-    tendrils.add(tendril);
+    if (points.length < 2) {
+        console.warn('Not enough valid points to create tendril');
+        return;
+    }
+    
+    try {
+        const curve = new THREE.CatmullRomCurve3(points);
+        const geometry = new THREE.TubeGeometry(curve, 32, 0.002, 8, false); 
+        geometry.userData.originalPositions = geometry.attributes.position.array.slice(); 
+        const material = new THREE.MeshStandardMaterial({
+            color: 0x12185C,
+            transparent: true,
+            opacity: 1.0,
+            emissive: 0x12185C,
+            emissiveIntensity: 0.8,
+        });
+        const tendril = new THREE.Mesh(geometry, material);
+        tendril.userData.waveOffset = Math.random() * Math.PI * 2;
+        tendrils.add(tendril);
+    } catch (error) {
+        console.warn('Error creating tendril geometry:', error);
+    }
 }
 
 for (let i = 0; i < tendrilCount; i++) {
@@ -92,7 +107,9 @@ animate();
 function playButtonClickSound() {
     const clickSound = new Audio('/sound/menubutton.mp3');
     clickSound.volume = 0.4; 
-    clickSound.play();
+    clickSound.play().catch(error => {
+        console.warn('Could not play button sound:', error);
+    });
 }
 
 const creditsButton = document.getElementById("credits-button");
@@ -133,11 +150,6 @@ if (infoButton) {
     });
 }
 
-const audio = new Audio(''); 
-audio.loop = true;
-audio.volume = 0.5;
-audio.play();
-
 if (beginButton) {
     beginButton.addEventListener("click", (event) => {
         event.preventDefault(); 
@@ -147,6 +159,11 @@ if (beginButton) {
             setTimeout(() => {
                 window.location.href = "/pages/interface.html"; 
             }, 300); 
+        }).catch(error => {
+            console.warn('Could not play click sound:', error);
+            setTimeout(() => {
+                window.location.href = "/pages/interface.html"; 
+            }, 300);
         });
     });
 }
